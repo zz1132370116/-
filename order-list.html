@@ -12,6 +12,69 @@
     <link rel="stylesheet" href="./css/xadmin.css">
     <script src="./lib/layui/layui.js" charset="utf-8"></script>
     <script type="text/javascript" src="./js/xadmin.js"></script>
+    <style>
+        .page-bar {
+            margin: 40px;
+            transform: translateY(50%);
+            /**上移元素**/
+            -ms-transform: translateY(-50%);
+            -webkit-transform: translateY(-50%);
+
+        }
+
+        ul,
+        li {
+            margin: 0px;
+            padding: 0px;
+            top: 20px;
+        }
+
+        li {
+            list-style: none
+        }
+
+        .page-bar li:first-child>a {
+            margin-left: 800px;
+            top: -20px;
+
+        }
+
+        .page-bar a {
+            border: 1px solid #ddd;
+            text-decoration: none;
+            position: relative;
+            float: left;
+            padding: 6px 12px;
+            margin-left: -1px;
+            line-height: 1.42857143;
+            color: #337ab7;
+            cursor: pointer;
+            
+            top: -20px;
+        }
+
+        .page-bar a:hover {
+            background-color: #eee;
+        }
+
+        .page-bar a.banclick {
+            cursor: not-allowed;
+        }
+
+        .page-bar .active a {
+            color: #fff;
+            cursor: default;
+            background-color: #337ab7;
+            border-color: #337ab7;
+        }
+
+        .page-bar i {
+            font-style: normal;
+            color: #d44950;
+            margin: 0px 4px;
+            font-size: 12px;
+        }
+    </style>
 </head>
 
 <body>
@@ -35,9 +98,11 @@
                         <div class="layui-card-body ">
                             <form class="layui-form layui-col-space5">
                                 <div class="layui-input-inline layui-show-xs-block">
-                                    <input class="layui-input" placeholder="开始日" name="start" id="start" v-model="params.startDate"></div>
+                                    <input class="layui-input" placeholder="开始日" name="start" id="start"
+                                        v-model="params.startDate"></div>
                                 <div class="layui-input-inline layui-show-xs-block">
-                                    <input class="layui-input" placeholder="截止日" name="end" id="end" v-model="params.endDate"></div>
+                                    <input class="layui-input" placeholder="截止日" name="end" id="end"
+                                        v-model="params.endDate"></div>
 
 
                                 <div class="layui-input-inline layui-show-xs-block">
@@ -54,7 +119,7 @@
                             <table class="layui-table layui-form">
                                 <thead>
                                     <tr>
-                                    
+
                                         <th style="width: 15%">订单编号</th>
                                         <th style="width: 8%">转账人</th>
                                         <th style="width: 15%">转出卡号</th>
@@ -67,7 +132,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr v-for="transferRecord in transferRecords" >
+                                    <tr v-for="transferRecord in transferRecords">
                                         <td>{{transferRecord.transferRecordUuid}}</td>
                                         <td>{{transferRecord.userName}}</td>
                                         <td>{{transferRecord.bankOutCard}}</td>
@@ -82,14 +147,19 @@
                             </table>
                         </div>
                         <div class="layui-card-body ">
-                            <div class="page">
-                                <div>
-                                    <a class="prev" href="">&lt;&lt;</a>
-                                    <a class="num" href="">1</a>
-                                    <span class="current">2</span>
-                                    <a class="num" href="">3</a>
-                                    <a class="num" href="">489</a>
-                                    <a class="next" href="">&gt;&gt;</a></div>
+                            <div class="page-bar">
+                                <ul>
+                                    <li v-if=" params.pageNum>1"><a v-on:click=" params.pageNum--,pageClick()">上一页</a>
+                                    </li>
+                                    <li v-if=" params.pageNum==1"><a class="banclick">上一页</a></li>
+                                    <li v-for="index in indexs" v-bind:class="{ 'active':  params.pageNum == index}">
+                                        <a v-on:click="btnClick(index)">{{ index }}</a>
+                                    </li>
+                                    <li v-if="params.pageNum!= totalPageNum"><a
+                                            v-on:click=" params.pageNum++,pageClick()">下一页</a></li>
+                                    <li v-if="params.pageNum == totalPageNum"><a class="banclick">下一页</a></li>
+                                    <li><a>共<i>{{this.totalPageNum}}</i>页</a></li>
+                                </ul>
                             </div>
                         </div>
                     </div>
@@ -110,47 +180,85 @@
 <script>
     new Vue({
         el: "#app",
-        data:{
-            transferRecords:[
+        data: {
+            transferRecords: [
 
             ],
-            params:{
-                idCard:"",
-                startDate:"",
-                endDate:""
-            }
-
+            params: {
+                idCard: "",
+                startDate: "",
+                endDate: "",
+                pageNum: 1
+            },
+            totalPageNum: 0, //总页数
         },
-        methods: {
-            //查询所有记录
-            getTransferRecords:function(){
-                getTransferRecords(this.params).then(res=>{
-                    if(res.data.data.errno == 0){
-                        this.transferRecords = res.data.data.data
+            methods: {
+                //查询所有记录
+                getTransferRecords: function () {
+                    getTransferRecords(this.params).then(res => {
+                        if (res.data.data.errno == 0) {
+                            this.transferRecords = res.data.data.data
+                            this.totalPageNum = res.data.data.totalPageNum;
+                        }
+                    })
+                },
+                btnClick: function (data) {//页码点击事件
+                    if (data != this.params.pageNum) {
+                        this.params.pageNum = data
                     }
-                })
+                },
+                pageClick: function () {
+                    console.log('现在在' + this.params.pageNum + '页');
+                }
+
+            },
+            created() {
+                var url = window.location.search; //获取url中"?"符后的字串   
+                var theRequest = new Object();
+                if (url.indexOf("?") != -1) {
+                    var str = url.substr(1);
+                    strs = str.split("&");
+                    for (var i = 0; i < strs.length; i++) {
+                        //就是这句的问题
+                        theRequest[strs[i].split("=")[0]] = decodeURI(strs[i].split("=")[1]);
+                        //之前用了unescape()
+                        //才会出现乱码  
+                    }
+                }
+                this.params.idCard = theRequest['username']
+                this.params.startDate = theRequest['start']
+                this.params.endDate = theRequest['end']
+                console.log(this.params)
+                this.getTransferRecords(this.params);
+            },
+            computed: {
+                indexs: function () {
+                    var left = 1;
+                    var right = this.totalPageNum;
+                    var ar = [];
+                    if (this.totalPageNum >= 5) {
+                        if (this.params.pageNum > 3 && this.params.pageNum < this.totalPageNum - 2) {
+                            left = this.params.pageNum - 2
+                            right = this.params.pageNum + 2
+                        } else {
+                            if (this.params.pageNum <= 3) {
+                                left = 1
+                                right = 5
+                            } else {
+                                right = this.totalPageNum
+                                left = this.totalPageNum - 4
+                            }
+                        }
+                    }
+                    while (left <= right) {
+                        ar.push(left)
+                        left++
+                    }
+                    return ar
+                }
+
             }
-            
-        },
-        created() {
-            var url = window.location.search; //获取url中"?"符后的字串   
-        var theRequest = new Object();
-        if (url.indexOf("?") != -1) {
-          var str = url.substr(1);
-          strs = str.split("&");
-          for (var i = 0; i < strs.length; i++) {
-            //就是这句的问题
-            theRequest[strs[i].split("=")[0]] = decodeURI(strs[i].split("=")[1]);
-            //之前用了unescape()
-            //才会出现乱码  
-          }
-        }
-        this.params.idCard = theRequest['username']
-        this.params.startDate = theRequest['start']
-        this.params.endDate = theRequest['end']
-        console.log( this.params)
-        this.getTransferRecords(this.params);
-        },
+        
     })
 
 

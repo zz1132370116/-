@@ -31,15 +31,15 @@ function GetUserByRedis(){
 }
 //查询会员数
 function GetUserList(){
-    return axios.get("/admin-service/GetUserList");
+    return axios.get("/admin-service/selectBankUserAll");
 }
 //查询记录数
 function GetRecords(){
-    return axios.get("/admin-service/GetRecords");
+    return axios.get("/admin-service/selectTransferRecordAll");
 }
-//查询异常数
+//查询提升数
 function GetAbnormals(){
-    return axios.get("/admin-service/GetAbnormals");
+    return axios.get("/admin-service/selectManagerTranscationAll");
 }
 //查询所有订单
 function getTransferRecords(params){
@@ -61,4 +61,15 @@ function memberStop(userId){
 function loginOut(userName){
     return axios.get("/admin-service/loginOut/"+userName);
 }
-
+//提额申请(查询所有)
+function getManagerTranscations(pageNum){
+    return axios.get("/admin-service/getManagerTranscations/"+pageNum);
+}
+//提额申请(通过)
+function adopt(transcationId){
+    return axios.get("/admin-service/adopt/"+transcationId);
+}
+//提额申请(不通过)
+function NoPassage(transcationId){
+    return axios.get("/admin-service/NoPassage/"+transcationId);
+}

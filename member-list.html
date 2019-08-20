@@ -16,6 +16,69 @@
           <script src="https://cdn.staticfile.org/html5shiv/r29/html5.min.js"></script>
           <script src="https://cdn.staticfile.org/respond.js/1.4.2/respond.min.js"></script>
         <![endif]-->
+  <style>
+    .page-bar {
+      margin: 40px;
+      transform: translateY(50%);
+      /**上移元素**/
+      -ms-transform: translateY(-50%);
+      -webkit-transform: translateY(-50%);
+
+    }
+
+    ul,
+    li {
+      margin: 0px;
+      padding: 0px;
+      top: 20px;
+    }
+
+    li {
+      list-style: none
+    }
+
+    .page-bar li:first-child>a {
+      margin-left: 800px;
+      top: -20px;
+
+    }
+
+    .page-bar a {
+      border: 1px solid #ddd;
+      text-decoration: none;
+      position: relative;
+      float: left;
+      padding: 6px 12px;
+      margin-left: -1px;
+      line-height: 1.42857143;
+      color: #337ab7;
+      cursor: pointer;
+
+      top: -20px;
+    }
+
+    .page-bar a:hover {
+      background-color: #eee;
+    }
+
+    .page-bar a.banclick {
+      cursor: not-allowed;
+    }
+
+    .page-bar .active a {
+      color: #fff;
+      cursor: default;
+      background-color: #337ab7;
+      border-color: #337ab7;
+    }
+
+    .page-bar i {
+      font-style: normal;
+      color: #d44950;
+      margin: 0px 4px;
+      font-size: 12px;
+    }
+  </style>
 </head>
 
 <body>
@@ -96,15 +159,19 @@
               </table>
             </div>
             <div class="layui-card-body ">
-              <div class="page">
-                <div>
-                  <a class="prev" href="">&lt;&lt;</a>
-                  <a class="num" href="">1</a>
-                  <span class="current">2</span>
-                  <a class="num" href="">3</a>
-                  <a class="num" href="">489</a>
-                  <a class="next" href="">&gt;&gt;</a>
-                </div>
+              <div class="page-bar">
+                <ul>
+                  <li v-if=" bankUser.pageNum>1"><a v-on:click=" bankUser.pageNum--,pageClick()">上一页</a>
+                  </li>
+                  <li v-if=" bankUser.pageNum==1"><a class="banclick">上一页</a></li>
+                  <li v-for="index in indexs" v-bind:class="{ 'active':  bankUser.pageNum == index}">
+                    <a v-on:click="btnClick(index)">{{ index }}</a>
+                  </li>
+                  <li v-if="bankUser.pageNum!= totalPageNum"><a v-on:click=" bankUser.pageNum++,pageClick()">下一页</a>
+                  </li>
+                  <li v-if="bankUser.pageNum == totalPageNum"><a class="banclick">下一页</a></li>
+                  <li><a>共<i>{{this.totalPageNum}}</i>页</a></li>
+                </ul>
               </div>
             </div>
           </div>
@@ -128,9 +195,10 @@
       bankUser: {
         userName: "",
         idCard: "",
-
+        pageNum: 1
       },
-      status: "启用"
+      status: "启用",
+      totalPageNum: 0, //总页数
     },
     methods: {
       //查询所有
@@ -138,22 +206,36 @@
         getBankUserList(this.bankUser).then(res => {
           if (res.data.data.errno == 0) {
             this.bankUsers = res.data.data.data;
+            console.log(this.bankUsers)
+            this.totalPageNum = res.data.data.totalPageNum
 
           }
         })
+      },
+      btnClick: function (data) {//页码点击事件
+        if (data != this.bankUser.pageNum) {
+          this.bankUser.pageNum = data;
+          this.getBankUserList();
+        }
+
+
+      },
+      pageClick: function () {
+        console.log('现在在' + this.bankUser.pageNum + '页');
+        this.getBankUserList();
       },
       //启用
       memberStart: function (id) {
         memberStart(id).then(res => {
           if (res.data.data.errno == 0) {
-            layer.msg('已启用!', { icon: 5, time: 1000 });
+            layer.msg('已启用!', { icon: 6, time: 1000 });
             this.getBankUserList();
           }
         })
       },
       //停用
       memberStop: function (id) {
-      
+
         memberStop(id).then(res => {
           if (res.data.data.errno == 0) {
             layer.msg('已停用!', { icon: 5, time: 1000 });
@@ -166,23 +248,50 @@
     },
     created() {
       var url = window.location.search; //获取url中"?"符后的字串   
-        var theRequest = new Object();
-        if (url.indexOf("?") != -1) {
-          var str = url.substr(1);
-          strs = str.split("&");
-          for (var i = 0; i < strs.length; i++) {
-            //就是这句的问题
-            theRequest[strs[i].split("=")[0]] = decodeURI(strs[i].split("=")[1]);
-            //之前用了unescape()
-            //才会出现乱码  
+      var theRequest = new Object();
+      if (url.indexOf("?") != -1) {
+        var str = url.substr(1);
+        strs = str.split("&");
+        for (var i = 0; i < strs.length; i++) {
+          //就是这句的问题
+          theRequest[strs[i].split("=")[0]] = decodeURI(strs[i].split("=")[1]);
+          //之前用了unescape()
+          //才会出现乱码  
+        }
+      }
+      this.bankUser.userName = theRequest['userName']
+      this.bankUser.idCard = theRequest['idCard']
+      console.log(this.bankUser)
+      this.getBankUserList(this.bankUser);
+
+    },
+    computed: {
+      indexs: function () {
+        var left = 1;
+        var right = this.totalPageNum;
+        var ar = [];
+        if (this.totalPageNum >= 5) {
+          if (this.bankUser.pageNum > 3 && this.bankUser.pageNum < this.totalPageNum - 2) {
+            left = this.bankUser.pageNum - 2
+            right = this.bankUser.pageNum + 2
+          } else {
+            if (this.bankUser.pageNum <= 3) {
+              left = 1
+              right = 5
+            } else {
+              right = this.totalPageNum
+              left = this.totalPageNum - 4
+            }
           }
         }
-        this.bankUser.userName = theRequest['userName']
-        this.bankUser.idCard = theRequest['idCard']
-        console.log( this.bankUser)
-        this.getBankUserList(this.bankUser);
-     
-    },
+        while (left <= right) {
+          ar.push(left)
+          left++
+        }
+        return ar
+      }
+
+    }
   })
 </script>
 <script>
